@@ -99,30 +99,45 @@ def validate_plan(plan: dict[str, Any]) -> dict[str, Any]:
     return validated
 
 
-def mcp_call(endpoint: str, tool: str, arguments: dict[str, Any], timeout: float) -> dict[str, Any]:
-    payload = {
-        "jsonrpc": "2.0",
-        "id": 1,
-        "method": "tools/call",
-        "params": {"name": tool, "arguments": arguments},
-    }
-    req = urllib.request.Request(
-        endpoint,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = resp.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as exc:
-        fail(f"ida-pro-mcp HTTP {exc.code}: {exc.read().decode('utf-8', errors='replace')[:400]}")
-    except urllib.error.URLError as exc:
-        fail(f"ida-pro-mcp unreachable at {endpoint}: {exc.reason}")
-    try:
-        return json.loads(body)
-    except json.JSONDecodeError:
-        fail(f"ida-pro-mcp returned non-JSON: {body[:400]}")
+def mcp_call(endpoint: str, tool_names: list[str], arguments: dict[str, Any], timeout: float) -> tuple[str, dict[str, Any]]:
+    """Try tool name aliases (HTTP short vs idapro_* client prefix)."""
+    last_err = ""
+    for tool in tool_names:
+        payload = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": tool, "arguments": arguments},
+        }
+        req = urllib.request.Request(
+            endpoint,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                body = resp.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")[:400]
+            last_err = f"ida-pro-mcp HTTP {exc.code} for tool {tool}: {detail}"
+            # Unknown tool / method-not-found → try the next alias.
+            if exc.code in (400, 404, 422) or "not found" in detail.lower() or "unknown" in detail.lower():
+                continue
+            fail(last_err)
+        except urllib.error.URLError as exc:
+            fail(f"ida-pro-mcp unreachable at {endpoint}: {exc.reason}")
+        try:
+            result = json.loads(body)
+        except json.JSONDecodeError:
+            fail(f"ida-pro-mcp returned non-JSON for {tool}: {body[:400]}")
+        err = result.get("error")
+        if err and "not found" in json.dumps(err).lower():
+            last_err = f"tool {tool} not found: {err}"
+            continue
+        return tool, result
+    fail(last_err or f"no usable tool name among {tool_names}")
+    raise AssertionError("unreachable")
 
 
 def apply_plan(plan: dict[str, Any], endpoint: str, timeout: float) -> None:
@@ -136,15 +151,15 @@ def apply_plan(plan: dict[str, Any], endpoint: str, timeout: float) -> None:
         args: dict[str, Any] = {"items": asm_items}
         if database:
             args["database"] = database
-        result = mcp_call(endpoint, "patch_asm", args, timeout)
-        print(json.dumps({"tool": "patch_asm", "result": result}, ensure_ascii=False, indent=2))
+        tool, result = mcp_call(endpoint, ["patch_asm", "idapro_patch_asm"], args, timeout)
+        print(json.dumps({"tool": tool, "result": result}, ensure_ascii=False, indent=2))
 
     if byte_items:
         args = {"patches": byte_items}
         if database:
             args["database"] = database
-        result = mcp_call(endpoint, "patch", args, timeout)
-        print(json.dumps({"tool": "patch", "result": result}, ensure_ascii=False, indent=2))
+        tool, result = mcp_call(endpoint, ["patch", "idapro_patch"], args, timeout)
+        print(json.dumps({"tool": tool, "result": result}, ensure_ascii=False, indent=2))
 
 
 def main(argv: list[str] | None = None) -> int:

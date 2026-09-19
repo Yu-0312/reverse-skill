@@ -106,11 +106,13 @@ python3 skills/ida-reverse/scripts/apply-asm-patch.py \
 
 | Plan field | MCP tool |
 |---|---|
-| `items[].asm` | `idapro_patch_asm` |
-| `items[].bytes` | `idapro_patch` |
+| `items[].asm` | `idapro_patch_asm` (HTTP alias `patch_asm`) |
+| `items[].bytes` | `idapro_patch` (HTTP alias `patch`) |
 | `database` | session id required by most `idapro_*` tools |
 | comments after patch | `idapro_set_comments` |
 | rename hook points | `idapro_rename` |
+
+`apply-asm-patch.py` tries HTTP short names first, then `idapro_*` prefixed names.
 
 Full tool list: [ida-mcp-cheatsheet.md](ida-mcp-cheatsheet.md). Entry skill: [../SKILL.md](../SKILL.md).
 
