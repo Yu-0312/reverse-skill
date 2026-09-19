@@ -9,8 +9,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIPX_HOME=/opt/pipx \
     PIPX_BIN_DIR=/usr/local/bin
 
-# Core runtimes + utilities used by skills/scripts and kali bootstrap.
-# Keep apt packages explicit; do not apt-install commercial/cracked tools.
+# Core runtimes + analysis CLIs available via Kali/apt.
+# Keep packages explicit; commercial/cracked tools are NOT installed here.
+# Manifest-aligned CLIs: apktool/adb/r2/seclists/nmap/sqlmap/hashcat/hydra/gobuster/ffuf/binwalk.
+# GitHub-only or licensed capabilities (jadx, ida-pro, jeb, binaryninja) stay for bootstrap/manual.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -27,11 +29,21 @@ RUN apt-get update \
         openjdk-17-jdk-headless \
         nodejs \
         npm \
-        binwalk \
         file \
         xxd \
+        binwalk \
+        apktool \
+        adb \
+        radare2 \
+        seclists \
+        nmap \
+        sqlmap \
+        hashcat \
+        hydra \
+        gobuster \
+        ffuf \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g npm@latest \
+    && pipx install frida-tools==14.10.4 \
     && pipx ensurepath
 
 # Non-root analyst user; cases live under /home/analyst/work

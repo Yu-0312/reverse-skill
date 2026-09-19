@@ -44,13 +44,22 @@ docker run --rm -it \
 
 | Layer | Contents |
 |---|---|
-| Base OS | `kalilinux/kali-rolling` (many RE/pentest CLIs preinstalled) |
+| Base OS | `kalilinux/kali-rolling` |
 | Runtimes | Python 3 + pipx, Node.js/npm, OpenJDK 17, git, jq |
+| Apt analysis CLIs | binwalk, apktool, adb, radare2, seclists, nmap, sqlmap, hashcat, hydra, gobuster, ffuf |
+| pipx tools | `frida-tools==14.10.4` (manifest pin) |
 | Package source | This repo mounted at `/opt/reverse-skill` (live code, no stale bake) |
 | Cases | Named volume `work/` for `work/<case>/` artifacts |
 | Bootstrap | Optional `BOOTSTRAP=true` build-arg runs Kali tool-index refresh at image build |
 
-Missing individual tools → use in-repo bootstrap, **do not guess paths**:
+**Not baked in** (licensed or GitHub-release only) — use in-repo bootstrap / manual install:
+
+| Capability | Path |
+|---|---|
+| jadx | `kali/scripts/bootstrap-reverse.sh jadx` (GitHub release pin) |
+| IDA Pro / idalib-mcp | manual license install; see `skills/ida-reverse/LOCAL-SETUP.md` |
+| JEB Pro / Binary Ninja | manual license install |
+| nuclei / agent-browser / MCP servers | bootstrap manifest or client registration |
 
 ```bash
 bash kali/scripts/bootstrap-reverse.sh --list
