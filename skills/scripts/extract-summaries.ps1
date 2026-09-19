@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 # 生成 skills/INDEX.md：从各模块 SKILL.md 的 frontmatter 提取 name+description，生成导航索引。
 # 幂等：重复运行输出一致（CI 用 git diff 校验防 drift）。
 # 用法：
@@ -91,13 +91,17 @@ foreach ($r in $rows) {
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('```')
 foreach ($r in $rows) {
-    [void]$sb.AppendLine(("skills/{0}/" -f ($r.Path -replace '\\', '/')))
+    # Emit module directories, not SKILL.md file paths (see issue #151).
+    $path = $r.Path -replace '\\', '/'
+    $dir = Split-Path -Parent $path
+    if ([string]::IsNullOrEmpty($dir)) { $dir = $r.Name }
+    [void]$sb.AppendLine(("skills/{0}/" -f $dir))
 }
 [void]$sb.AppendLine('```')
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('## 路由')
 [void]$sb.AppendLine('')
-[void]$sb.AppendLine('PRIMARY 路由由 `skills/config/routing.json`（唯一事实源）驱动，用 `master-route.ps1 -Hint "<任务>"` 分诊。')
+[void]$sb.AppendLine('PRIMARY 路由由 `skills/config/routing.json`（唯一事实源）驱动；平台原生入口：`master-route.ps1`（Windows）/ `master-route.sh`（Linux、macOS、Kali）。')
 [void]$sb.AppendLine('歧义场景读 `skills/routing.md` 全矩阵；CTF 多类型任务走 `CTF-Sandbox-Orchestrator/`。')
 
 $newContent = $sb.ToString()
