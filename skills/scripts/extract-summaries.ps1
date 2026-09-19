@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 # 生成 skills/INDEX.md：从各模块 SKILL.md 的 frontmatter 提取 name+description，生成导航索引。
 # 幂等：重复运行输出一致（CI 用 git diff 校验防 drift）。
 # 用法：
