@@ -92,9 +92,11 @@ foreach ($r in $rows) {
 [void]$sb.AppendLine('```')
 foreach ($r in $rows) {
     # Emit module directories, not SKILL.md file paths (see issue #151).
+    # Normalize to forward slashes: Windows Split-Path returns backslashes.
     $path = $r.Path -replace '\\', '/'
     $dir = Split-Path -Parent $path
     if ([string]::IsNullOrEmpty($dir)) { $dir = $r.Name }
+    $dir = $dir -replace '\\', '/'
     [void]$sb.AppendLine(("skills/{0}/" -f $dir))
 }
 [void]$sb.AppendLine('```')
